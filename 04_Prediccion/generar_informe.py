@@ -15,6 +15,8 @@ grupos = pd.read_csv(RUTA + 'predicciones_fase_grupos.csv')
 clasif = pd.read_csv(RUTA + 'clasificacion_grupos.csv')
 elim = pd.read_csv(RUTA + 'predicciones_eliminatorias.csv')
 mc = pd.read_csv(RUTA + 'probabilidades_montecarlo.csv', index_col=0)
+validacion_path = RUTA + 'validacion_predicciones.csv'
+validacion = pd.read_csv(validacion_path) if os.path.exists(validacion_path) else pd.DataFrame()
 config_path = RUTA + 'mejores_hiperparametros.json'
 if os.path.exists(config_path):
     with open(config_path, encoding='utf-8') as f:
@@ -73,6 +75,23 @@ L.append("|---|---|---|---|---|---|")
 for i, (nombre, r) in enumerate(mc.head(10).iterrows(), 1):
     L.append(f"| {i} | {eq(nombre)} | **{r['Campeon']:.1f}%** | {r['Final']:.1f}% | {r['Semis']:.1f}% | {r['Cuartos']:.1f}% |")
 L.append("")
+
+if not validacion.empty:
+    acc_1x2 = validacion['Acierto_1X2'].mean() * 100
+    acc_marcador = validacion['Acierto_Marcador'].mean() * 100
+    brier = validacion['Brier_1X2'].mean()
+    prob_real_media = validacion['Prob_Real_Modelo_Previo'].mean()
+    L.append("### Validación contra partidos jugados\n")
+    L.append("| Métrica | Valor |")
+    L.append("|---|---:|")
+    L.append(f"| Partidos evaluados | {len(validacion)} |")
+    L.append(f"| Acierto 1X2 | {acc_1x2:.1f}% |")
+    L.append(f"| Marcador exacto | {acc_marcador:.1f}% |")
+    L.append(f"| Brier score 1X2 medio | {brier:.3f} |")
+    L.append(f"| Probabilidad media asignada al resultado real | {prob_real_media:.1f}% |")
+    L.append("")
+    L.append("Detalle completo en [`Predicciones/VALIDACION.md`](VALIDACION.md) y "
+             "[`Predicciones/validacion_predicciones.csv`](validacion_predicciones.csv).\n")
 
 # ------------------- FASE DE GRUPOS -------------------
 L.append("## Fase de grupos — 72 partidos\n")

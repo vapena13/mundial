@@ -27,6 +27,18 @@ Generado con el modelo de este repositorio: regresores XGBoost (Tweedie) de gole
 | 9 | 🇧🇷 Brasil | **4.2%** | 9.1% | 18.3% | 37.2% |
 | 10 | 🇲🇽 México | **3.4%** | 9.2% | 19.7% | 37.6% |
 
+### Validación contra partidos jugados
+
+| Métrica | Valor |
+|---|---:|
+| Partidos evaluados | 44 |
+| Acierto 1X2 | 52.3% |
+| Marcador exacto | 11.4% |
+| Brier score 1X2 medio | 0.570 |
+| Probabilidad media asignada al resultado real | 42.7% |
+
+Detalle completo en [`Predicciones/VALIDACION.md`](VALIDACION.md) y [`Predicciones/validacion_predicciones.csv`](validacion_predicciones.csv).
+
 ## Fase de grupos — 72 partidos
 
 Marcador = marcador exacto más probable según los goles esperados del modelo, condicionado al resultado 1X2 más probable.

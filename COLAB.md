@@ -26,6 +26,12 @@ python 04_Prediccion/prediccion_mundial.py --profile colab --venue-mode listed
 El archivo `Predicciones/comparacion_modos_cancha.csv` muestra cuanto cambia la
 probabilidad entre neutral puro y anfitrion-aware.
 
+Cada corrida tambien genera:
+
+- `Predicciones/VALIDACION.md`: resumen de acierto 1X2, marcador exacto,
+  Brier score y mayores sorpresas.
+- `Predicciones/validacion_predicciones.csv`: detalle partido por partido.
+
 Para una comprobacion rapida del pipeline:
 
 ```bash
@@ -69,3 +75,4 @@ https://vapena13.github.io/mundial/
 
 Cada vez que cambie `Data/resultados_reales.csv`, vuelva a correr los tres
 comandos de ejecucion y suba los cambios de `Data/`, `Predicciones/` y `docs/`.
+La validacion se recalcula con los partidos jugados que existan en ese CSV.

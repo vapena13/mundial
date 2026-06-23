@@ -41,6 +41,11 @@ Para activarla en este repo: en GitHub ve a **Settings → Pages → Build and d
 ### 7️⃣ Actualización con resultados reales
 Los marcadores ya jugados se guardan en [`Data/resultados_reales.csv`](Data/resultados_reales.csv). Cada fila fija un partido en fase de grupos y el modelo recalcula tablas, cruces y Monte Carlo con ese resultado como hecho real. Las predicciones no se reentrenan con esa muestra pequeña; solo se actualiza la simulación del torneo.
 
+Además, el pipeline compara la predicción previa contra el marcador real y genera:
+
+- [`Predicciones/VALIDACION.md`](Predicciones/VALIDACION.md): resumen legible de aciertos, errores y sorpresas.
+- [`Predicciones/validacion_predicciones.csv`](Predicciones/validacion_predicciones.csv): detalle partido por partido para analizar la calibración.
+
 ---
 
 ## 📂 Estructura del repositorio

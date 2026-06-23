@@ -122,7 +122,28 @@ def construir_datos():
     for g in tablas:
         tablas[g].sort(key=lambda x: x['pos'])
 
-    return partidos, campeon, cuadro, tablas
+    validacion = {}
+    if os.path.exists('Predicciones/validacion_predicciones.csv'):
+        val = pd.read_csv('Predicciones/validacion_predicciones.csv')
+        if not val.empty:
+            validacion = {
+                'partidos': int(len(val)),
+                'acierto_1x2': round(float(val['Acierto_1X2'].mean() * 100), 1),
+                'marcador_exacto': round(float(val['Acierto_Marcador'].mean() * 100), 1),
+                'brier': round(float(val['Brier_1X2'].mean()), 3),
+                'prob_real_media': round(float(val['Prob_Real_Modelo_Previo'].mean()), 1),
+                'sorpresas': [
+                    {
+                        'partido': f"{r['Local']} - {r['Visitante']}",
+                        'pred': r['Marcador_Modelo_Previo'],
+                        'real': r['Marcador_Real'],
+                        'prob': float(r['Prob_Real_Modelo_Previo']),
+                    }
+                    for _, r in val.sort_values('Prob_Real_Modelo_Previo').head(3).iterrows()
+                ],
+            }
+
+    return partidos, campeon, cuadro, tablas, validacion
 
 
 PLANTILLA = """<!DOCTYPE html>
@@ -228,6 +249,9 @@ footer a{color:var(--ac);text-decoration:none}
   <div class="dias" id="dias" role="tablist" aria-label="Elegir jornada"></div>
   <div id="dia" class="cards"></div>
 
+  <h2 id="t-validacion">🎯 Validación <small>predicción previa vs resultados reales</small></h2>
+  <div class="card" id="validacion"></div>
+
   <h2 id="t-mc">🏆 Probabilidades de campeón <small>Monte Carlo · 10.000 simulaciones</small></h2>
   <div class="card"><div style="overflow-x:auto">
   <table id="tabla-mc"><thead><tr><th>#</th><th>Selección</th><th class="num">Campeón</th><th class="num">Final</th><th class="num">Semis</th><th class="num">Pasa grupos</th><th style="width:26%"></th></tr></thead><tbody></tbody></table>
@@ -254,6 +278,7 @@ const PARTIDOS = __PARTIDOS_JSON__;
 const CAMPEON = __CAMPEON_JSON__;
 const CUADRO = __CUADRO_JSON__;
 const TABLAS = __TABLAS_JSON__;
+const VALIDACION = __VALIDACION_JSON__;
 const ISO = __ISO_JSON__;
 
 const isoLocal = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -330,6 +355,26 @@ pintarDia();
 const selBtn = document.querySelector('#dias button.sel');
 if (selBtn) selBtn.scrollIntoView({block:'nearest', inline:'center'});
 
+function pintarValidacion(){
+  const v = document.getElementById('validacion');
+  if (!VALIDACION || !VALIDACION.partidos){
+    v.innerHTML = '<p style="color:var(--tx2)">Aún no hay partidos jugados para validar.</p>';
+    return;
+  }
+  const sorpresas = VALIDACION.sorpresas.map(s =>
+    `<li>${s.partido}: pred. ${s.pred}, real ${s.real} (${s.prob.toFixed(1)}%)</li>`
+  ).join('');
+  v.innerHTML = `
+    <div class="stats">
+      <div class="stat"><b>${VALIDACION.acierto_1x2.toFixed(1)}% acierto 1X2</b><span>${VALIDACION.partidos} partidos evaluados</span></div>
+      <div class="stat"><b>${VALIDACION.marcador_exacto.toFixed(1)}% marcador exacto</b><span>Brier medio ${VALIDACION.brier.toFixed(3)}</span></div>
+    </div>
+    <p style="color:var(--tx2);margin-top:12px;font-size:.85rem">Probabilidad media asignada al resultado real: ${VALIDACION.prob_real_media.toFixed(1)}%.</p>
+    <div class="subtit">Mayores sorpresas</div>
+    <ul style="color:var(--tx2);font-size:.85rem;padding-left:20px">${sorpresas}</ul>`;
+}
+pintarValidacion();
+
 const tb = document.querySelector('#tabla-mc tbody');
 CAMPEON.forEach((c,i) => {
   const tr = document.createElement('tr');
@@ -391,12 +436,13 @@ const contC = document.getElementById('cuadro');
 
 
 if __name__ == '__main__':
-    partidos, campeon, cuadro, tablas = construir_datos()
+    partidos, campeon, cuadro, tablas, validacion = construir_datos()
     html = (PLANTILLA
             .replace('__PARTIDOS_JSON__', json.dumps(partidos, ensure_ascii=False))
             .replace('__CAMPEON_JSON__', json.dumps(campeon, ensure_ascii=False))
             .replace('__CUADRO_JSON__', json.dumps(cuadro, ensure_ascii=False))
             .replace('__TABLAS_JSON__', json.dumps(tablas, ensure_ascii=False))
+            .replace('__VALIDACION_JSON__', json.dumps(validacion, ensure_ascii=False))
             .replace('__ISO_JSON__', json.dumps(BANDERAS_ISO, ensure_ascii=False))
             .replace('__FECHA_GEN__', datetime.now(timezone.utc).strftime('%d-%m-%Y %H:%M UTC')))
     os.makedirs('docs', exist_ok=True)

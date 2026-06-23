@@ -1,0 +1,45 @@
+﻿Fecha,Grupo,Local,Visitante,Marcador_Modelo_Previo,Marcador_Real,Resultado_Modelo_Previo,Resultado_Real,Acierto_1X2,Acierto_Marcador,Prob_Real_Modelo_Previo,Sorpresa_pp,Error_Goles_Local,Error_Goles_Visitante,Error_Goles_Total,Brier_1X2,Prob_1_Modelo_Previo,Prob_X_Modelo_Previo,Prob_2_Modelo_Previo
+2026-06-11,A,México,Sudáfrica,1-1,2-0,X,1,False,False,24.1,75.9,1,1,2,0.975,24.1,61.5,14.4
+2026-06-12,A,Corea del Sur,República Checa,2-1,2-1,1,1,True,True,50.3,49.7,0,0,0,0.3754,50.3,29.8,19.9
+2026-06-12,B,Canadá,Bosnia-Herzegovina,2-0,1-1,1,X,False,False,35.1,64.9,1,1,2,0.6702,46.3,35.1,18.6
+2026-06-13,B,Catar,Suiza,1-2,1-1,2,X,False,False,32.9,67.1,0,1,1,0.7098,20.6,32.9,46.6
+2026-06-13,D,EE. UU.,Paraguay,2-0,4-1,1,1,True,False,67.4,32.6,2,1,3,0.1719,67.4,24.2,8.4
+2026-06-14,C,Brasil,Marruecos,2-1,1-1,1,X,False,False,30.5,69.5,1,0,1,0.7581,47.7,30.5,21.8
+2026-06-14,C,Haití,Escocia,0-2,0-1,2,2,True,False,51.7,48.3,0,1,1,0.3561,18.6,29.7,51.7
+2026-06-14,D,Australia,Turquía,1-2,2-0,2,1,False,False,21.9,78.1,1,2,3,0.9579,21.9,24.4,53.7
+2026-06-14,E,Alemania,Curazao,3-0,7-1,1,1,True,False,72.8,27.2,4,1,5,0.1184,72.8,19.7,7.5
+2026-06-14,F,Países Bajos,Japón,1-1,2-2,X,X,True,False,38.8,61.2,1,1,2,0.5649,26.7,38.8,34.5
+2026-06-15,E,Costa de Marfil,Ecuador,1-0,1-0,1,1,True,True,51.9,48.1,0,0,0,0.3564,51.9,30.9,17.2
+2026-06-15,F,Suecia,Túnez,2-1,5-1,1,1,True,False,40.6,59.4,3,0,3,0.5299,40.6,29.1,30.4
+2026-06-15,G,Bélgica,Egipto,2-0,1-1,1,X,False,False,26.5,73.5,1,1,2,0.9338,61.6,26.5,11.9
+2026-06-15,H,España,Cabo Verde,2-0,0-0,1,X,False,False,24.9,75.1,2,0,2,0.9796,63.4,24.9,11.7
+2026-06-16,G,Irán,Nueva Zelanda,2-0,2-2,1,X,False,False,25.6,74.4,0,2,2,0.9697,63.6,25.6,10.8
+2026-06-16,H,Arabia Saudí,Uruguay,0-2,1-1,2,X,False,False,21.5,78.5,1,1,2,1.098,9.9,21.5,68.7
+2026-06-16,I,Francia,Senegal,1-1,3-1,X,1,False,False,37.4,62.6,2,0,2,0.6047,37.4,40.6,21.9
+2026-06-17,I,Irak,Noruega,0-2,1-4,2,2,True,False,58.0,42.0,1,2,3,0.2658,18.1,23.8,58.0
+2026-06-17,J,Argentina,Argelia,1-0,3-0,1,1,True,False,56.5,43.5,2,0,2,0.2914,56.5,27.9,15.6
+2026-06-17,J,Austria,Jordania,3-0,3-1,1,1,True,False,71.7,28.3,0,1,1,0.1261,71.7,19.6,8.7
+2026-06-17,K,Portugal,RD Congo,2-0,1-1,1,X,False,False,26.7,73.3,1,1,2,0.9216,60.7,26.7,12.6
+2026-06-17,L,Inglaterra,Croacia,1-1,4-2,X,1,False,False,36.3,63.7,3,1,4,0.6226,36.3,40.2,23.5
+2026-06-18,A,República Checa,Sudáfrica,1-1,1-1,X,X,True,True,38.8,61.2,0,0,0,0.5641,27.8,38.8,33.5
+2026-06-18,B,Suiza,Bosnia-Herzegovina,2-1,4-1,1,1,True,False,43.7,56.3,2,0,2,0.4765,43.7,30.9,25.3
+2026-06-18,K,Uzbekistán,Colombia,0-2,1-3,2,2,True,False,59.9,40.1,1,1,2,0.2503,13.3,26.8,59.9
+2026-06-18,L,Ghana,Panamá,0-1,1-0,2,1,False,False,30.1,69.9,1,1,2,0.7354,30.1,32.0,38.0
+2026-06-19,A,México,Corea del Sur,1-1,1-0,X,1,False,False,32.1,67.9,0,1,1,0.7256,32.1,47.0,20.9
+2026-06-19,B,Canadá,Catar,0-1,6-0,2,1,False,False,29.1,70.9,6,1,7,0.7568,29.1,32.3,38.7
+2026-06-19,D,EE. UU.,Australia,1-0,2-0,1,1,True,False,55.6,44.4,1,0,1,0.3085,55.6,30.2,14.2
+2026-06-20,C,Escocia,Marruecos,1-2,0-1,2,2,True,False,46.5,53.5,1,1,2,0.4351,21.4,32.1,46.5
+2026-06-20,C,Brasil,Haití,3-0,3-0,1,1,True,True,70.2,29.8,0,0,0,0.1406,70.2,21.0,8.8
+2026-06-20,D,Turquía,Paraguay,1-0,0-1,1,2,False,False,13.1,86.9,1,1,2,1.2235,64.7,22.3,13.1
+2026-06-20,E,Alemania,Costa de Marfil,1-1,2-1,X,1,False,False,31.1,68.9,1,0,1,0.7504,31.1,48.3,20.6
+2026-06-20,F,Países Bajos,Suecia,2-1,5-1,1,1,True,False,59.1,40.9,3,0,3,0.255,59.1,24.8,16.2
+2026-06-21,E,Ecuador,Curazao,2-0,0-0,1,X,False,False,29.7,70.3,2,0,2,0.8283,56.0,29.7,14.3
+2026-06-21,F,Túnez,Japón,0-1,0-4,2,2,True,False,55.8,44.2,0,3,3,0.304,14.9,29.4,55.8
+2026-06-21,G,Bélgica,Irán,2-0,0-0,1,X,False,False,32.5,67.5,2,0,2,0.7154,46.4,32.5,21.1
+2026-06-21,H,España,Arabia Saudí,2-0,4-0,1,1,True,False,67.9,32.1,2,0,2,0.1657,67.9,23.5,8.6
+2026-06-22,G,Nueva Zelanda,Egipto,0-1,1-3,2,2,True,False,49.5,50.5,1,2,3,0.3911,18.7,31.8,49.5
+2026-06-22,H,Uruguay,Cabo Verde,1-0,2-2,1,X,False,False,24.1,75.9,1,2,3,0.9658,60.5,24.1,15.4
+2026-06-22,I,Francia,Irak,3-0,3-0,1,1,True,True,73.4,26.6,0,0,0,0.1134,73.4,19.4,7.1
+2026-06-22,J,Argentina,Austria,2-1,2-0,1,1,True,False,45.7,54.3,0,1,1,0.4511,45.7,33.8,20.5
+2026-06-23,I,Noruega,Senegal,0-2,3-2,2,1,False,False,18.8,81.2,3,0,3,1.0115,18.8,30.0,51.2
+2026-06-23,J,Jordania,Argelia,0-2,1-2,2,2,True,False,69.6,30.4,1,0,1,0.1431,10.7,19.8,69.6

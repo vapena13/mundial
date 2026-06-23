@@ -592,6 +592,8 @@ def aplicar_resultados_reales(df_pred, ruta=None):
     jugado = df['Goles_Reales_Local'].notna()
     df['Jugado'] = jugado
 
+    df['xG_Modelo_Local_Previa'] = df['xG_Modelo_Local']
+    df['xG_Modelo_Visitante_Previa'] = df['xG_Modelo_Visitante']
     for col in ['Prob_Local', 'Prob_Empate', 'Prob_Visitante']:
         df[f'{col}_Previa'] = df[col]
 
@@ -889,6 +891,19 @@ def prediccion_puntual(df_pred_grupos, mc, equipos, fechas_reales):
     # BUCLE 1: FASE DE GRUPOS
     for k, (_, r) in enumerate(df_pred_grupos.iterrows()):
         res    = ['1', 'X', '2'][tiradas[k]]
+        probs_previas = [
+            r.get('Prob_Local_Previa', r['Prob_Local']),
+            r.get('Prob_Empate_Previa', r['Prob_Empate']),
+            r.get('Prob_Visitante_Previa', r['Prob_Visitante']),
+        ]
+        res_previo = ['1', 'X', '2'][int(np.argmax(probs_previas))]
+        xg_l_previo = r.get('xG_Modelo_Local_Previa', r['xG_Modelo_Local'])
+        xg_v_previo = r.get('xG_Modelo_Visitante_Previa', r['xG_Modelo_Visitante'])
+        gl_previo, gv_previo = marcador_mas_probable(
+            xg_l_previo, xg_v_previo,
+            probs_previas[0], probs_previas[1], probs_previas[2],
+            res_previo,
+        )
 
         if bool(r.get('Jugado', False)):
             gl = int(r['Goles_Reales_Local'])
@@ -910,11 +925,18 @@ def prediccion_puntual(df_pred_grupos, mc, equipos, fechas_reales):
             'Marcador_Predicho': f'{gl}-{gv}',
             'Estado':            estado,
             'Resultado_1X2':     res,
+            'Marcador_Modelo_Previo': f'{gl_previo}-{gv_previo}',
+            'Resultado_1X2_Modelo_Previo': res_previo,
             'xG_L':              round(r['xG_Modelo_Local'],    2),
             'xG_V':              round(r['xG_Modelo_Visitante'], 2),
+            'xG_L_Modelo_Previo': round(xg_l_previo, 2),
+            'xG_V_Modelo_Previo': round(xg_v_previo, 2),
             'Prob_1':            round(r['Prob_Local']    * 100, 1),
             'Prob_X':            round(r['Prob_Empate']   * 100, 1),
             'Prob_2':            round(r['Prob_Visitante'] * 100, 1),
+            'Prob_1_Modelo_Previo': round(probs_previas[0] * 100, 1),
+            'Prob_X_Modelo_Previo': round(probs_previas[1] * 100, 1),
+            'Prob_2_Modelo_Previo': round(probs_previas[2] * 100, 1),
         })
 
     df_grupos_pred = pd.DataFrame(filas).sort_values(['Grupo', 'Fecha']).reset_index(drop=True)
@@ -962,6 +984,126 @@ def prediccion_puntual(df_pred_grupos, mc, equipos, fechas_reales):
     campeon = jugar_cruce('Final', sf[0], sf[1])
 
     return df_grupos_pred, clasif, terceros, pos, pd.DataFrame(registro), campeon
+
+
+def _resultado_1x2_desde_goles(gl, gv):
+    if gl > gv:
+        return '1'
+    if gl == gv:
+        return 'X'
+    return '2'
+
+
+def _parse_marcador(marcador):
+    gl, gv = str(marcador).split('-')
+    return int(gl), int(gv)
+
+
+def generar_validacion_predicciones(df_grupos_pred):
+    jugados = df_grupos_pred[df_grupos_pred['Estado'] == 'Jugado'].copy()
+    if jugados.empty:
+        return pd.DataFrame()
+
+    filas = []
+    for _, r in jugados.iterrows():
+        gl_real, gv_real = _parse_marcador(r['Marcador_Predicho'])
+        gl_pred, gv_pred = _parse_marcador(r['Marcador_Modelo_Previo'])
+        res_real = _resultado_1x2_desde_goles(gl_real, gv_real)
+        res_pred = r['Resultado_1X2_Modelo_Previo']
+
+        probs = {
+            '1': float(r['Prob_1_Modelo_Previo']) / 100,
+            'X': float(r['Prob_X_Modelo_Previo']) / 100,
+            '2': float(r['Prob_2_Modelo_Previo']) / 100,
+        }
+        brier = sum((probs[k] - (1.0 if k == res_real else 0.0)) ** 2 for k in ['1', 'X', '2'])
+        prob_real = probs[res_real] * 100
+
+        filas.append({
+            'Fecha': r['Fecha'],
+            'Grupo': r['Grupo'],
+            'Local': r['Local'],
+            'Visitante': r['Visitante'],
+            'Marcador_Modelo_Previo': r['Marcador_Modelo_Previo'],
+            'Marcador_Real': r['Marcador_Predicho'],
+            'Resultado_Modelo_Previo': res_pred,
+            'Resultado_Real': res_real,
+            'Acierto_1X2': res_pred == res_real,
+            'Acierto_Marcador': (gl_pred, gv_pred) == (gl_real, gv_real),
+            'Prob_Real_Modelo_Previo': round(prob_real, 1),
+            'Sorpresa_pp': round(100 - prob_real, 1),
+            'Error_Goles_Local': abs(gl_pred - gl_real),
+            'Error_Goles_Visitante': abs(gv_pred - gv_real),
+            'Error_Goles_Total': abs(gl_pred - gl_real) + abs(gv_pred - gv_real),
+            'Brier_1X2': round(brier, 4),
+            'Prob_1_Modelo_Previo': r['Prob_1_Modelo_Previo'],
+            'Prob_X_Modelo_Previo': r['Prob_X_Modelo_Previo'],
+            'Prob_2_Modelo_Previo': r['Prob_2_Modelo_Previo'],
+        })
+
+    val = pd.DataFrame(filas).sort_values(['Fecha', 'Grupo']).reset_index(drop=True)
+    val.to_csv('Predicciones/validacion_predicciones.csv', index=False, encoding='utf-8-sig')
+
+    n = len(val)
+    acc_1x2 = val['Acierto_1X2'].mean() * 100
+    acc_marcador = val['Acierto_Marcador'].mean() * 100
+    mae_total = val['Error_Goles_Total'].mean()
+    brier = val['Brier_1X2'].mean()
+    prob_real_media = val['Prob_Real_Modelo_Previo'].mean()
+
+    lineas = [
+        '# Validacion de predicciones vs resultados reales',
+        '',
+        'Compara la prediccion previa del modelo contra los partidos ya jugados. '
+        'Los partidos jugados se fijan despues para tablas y Monte Carlo, pero aqui se evalua '
+        'lo que el modelo habia dicho antes de conocer el marcador real.',
+        '',
+        '## Resumen',
+        '',
+        '| Metrica | Valor |',
+        '|---|---:|',
+        f'| Partidos evaluados | {n} |',
+        f'| Acierto 1X2 | {acc_1x2:.1f}% |',
+        f'| Marcador exacto | {acc_marcador:.1f}% |',
+        f'| Error medio de goles totales | {mae_total:.2f} |',
+        f'| Brier score 1X2 medio | {brier:.3f} |',
+        f'| Probabilidad media asignada al resultado real | {prob_real_media:.1f}% |',
+        '',
+        '## Mayores sorpresas',
+        '',
+        '| Fecha | Partido | Prediccion previa | Real | Prob. real previa |',
+        '|---|---|---:|---:|---:|',
+    ]
+    sorpresas = val.sort_values('Prob_Real_Modelo_Previo').head(10)
+    for _, r in sorpresas.iterrows():
+        lineas.append(
+            f"| {r['Fecha']} | {r['Local']} - {r['Visitante']} | "
+            f"{r['Marcador_Modelo_Previo']} ({r['Resultado_Modelo_Previo']}) | "
+            f"{r['Marcador_Real']} ({r['Resultado_Real']}) | "
+            f"{r['Prob_Real_Modelo_Previo']:.1f}% |"
+        )
+    lineas.extend([
+        '',
+        '## Detalle',
+        '',
+        '| Fecha | Grupo | Partido | Pred. previa | Real | Acierto 1X2 | Prob. real previa | Brier |',
+        '|---|---|---|---:|---:|:-:|---:|---:|',
+    ])
+    for _, r in val.iterrows():
+        ok = 'si' if r['Acierto_1X2'] else 'no'
+        lineas.append(
+            f"| {r['Fecha']} | {r['Grupo']} | {r['Local']} - {r['Visitante']} | "
+            f"{r['Marcador_Modelo_Previo']} | {r['Marcador_Real']} | {ok} | "
+            f"{r['Prob_Real_Modelo_Previo']:.1f}% | {r['Brier_1X2']:.3f} |"
+        )
+    with open('Predicciones/VALIDACION.md', 'w', encoding='utf-8') as f:
+        f.write('\n'.join(lineas) + '\n')
+
+    print(
+        f"Validacion: {n} jugados | acierto 1X2={acc_1x2:.1f}% | "
+        f"marcador exacto={acc_marcador:.1f}% | Brier={brier:.3f}"
+    )
+    return val
 
 
 # ====================================================================
@@ -1034,6 +1176,7 @@ if __name__ == '__main__':
     df_grupos_pred, clasif, terceros, pos, df_elim, campeon = prediccion_puntual(
         df_predicciones_mundial, mc, equipos, fechas_reales,
     )
+    generar_validacion_predicciones(df_grupos_pred)
 
     print(f"Monte Carlo ({N_SIMULACIONES} simulaciones)...")
     tabla_mc = monte_carlo(df_predicciones_mundial, mc, equipos, N_SIMULACIONES)
