@@ -13,6 +13,19 @@ python 04_Prediccion/generar_informe.py
 python 05_Web/generar_web.py
 ```
 
+Por defecto se usa `--venue-mode host-aware`: cancha neutral para casi todos los
+partidos y ventaja de anfitrion solo cuando juega `EE. UU.`, `Mexico` o
+`Canada`. Para comparar supuestos:
+
+```bash
+python 04_Prediccion/prediccion_mundial.py --profile colab --venue-mode neutral
+python 04_Prediccion/prediccion_mundial.py --profile colab --venue-mode host-aware
+python 04_Prediccion/prediccion_mundial.py --profile colab --venue-mode listed
+```
+
+El archivo `Predicciones/comparacion_modos_cancha.csv` muestra cuanto cambia la
+probabilidad entre neutral puro y anfitrion-aware.
+
 Para una comprobacion rapida del pipeline:
 
 ```bash

@@ -36,6 +36,7 @@ CV_SPLITS = 5
 CPU_THREADS = max(1, os.cpu_count() or 1)
 CALIBRATION_METHOD = 'isotonic'
 RUTA_RESULTADOS_REALES = './Data/resultados_reales.csv'
+ANFITRIONES_2026 = {'EE. UU.', 'México', 'Canadá'}
 
 
 def configurar_perfil(nombre):
@@ -357,11 +358,26 @@ def _modelos():
     return _CACHE_MODELOS
 
 
-def pipeline_prediccion(df_bruto, sede_neutral=True, T=None):
+def _normalizar_modo_cancha(venue_mode, sede_neutral):
+    if venue_mode is not None:
+        return venue_mode
+    return 'neutral' if sede_neutral else 'listed'
+
+
+def pipeline_prediccion(df_bruto, sede_neutral=True, T=None, venue_mode=None):
+    """Predice partidos con tres tratamientos de cancha.
+
+    listed: usa tal cual Equipo_Local/Equipo_Visitante.
+    neutral: promedia ida y vuelta para quitar sesgo por orden del fixture.
+    host-aware: neutral salvo partidos donde juega EE. UU., Mexico o Canada.
+    """
     m = _modelos()
     modelo_L, modelo_V, modelo_1X2, columnas_base = m['L'], m['V'], m['1X2'], m['cols']
     if T is None:
         T = m.get('t_optima', 1.0)
+    venue_mode = _normalizar_modo_cancha(venue_mode, sede_neutral)
+    if venue_mode not in {'listed', 'neutral', 'host-aware'}:
+        raise ValueError("venue_mode debe ser: listed, neutral o host-aware")
 
     def obtener_predicciones_crudas(df_temp):
         df_calc = df_temp.copy()
@@ -427,18 +443,14 @@ def pipeline_prediccion(df_bruto, sede_neutral=True, T=None):
         cols_contexto.append('Grupo')
     contexto = df_normal[cols_contexto].copy()
 
-    goles_L_norm, goles_V_norm, probs_norm = obtener_predicciones_crudas(df_normal)
-
-    if not sede_neutral:
-        resultados = contexto.copy()
-        resultados['xG_Modelo_Local']     = goles_L_norm.round(2)
-        resultados['xG_Modelo_Visitante'] = goles_V_norm.round(2)
-        resultados['Prob_Local']          = probs_norm[:, 0]
-        resultados['Prob_Empate']         = probs_norm[:, 1]
-        resultados['Prob_Visitante']      = probs_norm[:, 2]
+    def aplicar_temperatura(resultados):
+        probs_afiladas = resultados[['Prob_Local', 'Prob_Empate', 'Prob_Visitante']] ** (1 / T)
+        s = probs_afiladas.sum(axis=1).replace(0, 1e-12)
+        resultados[['Prob_Local', 'Prob_Empate', 'Prob_Visitante']] = probs_afiladas.div(s, axis=0)
         return resultados
 
-    df_inverso      = df_bruto.copy()
+    goles_L_norm, goles_V_norm, probs_norm = obtener_predicciones_crudas(df_normal)
+    df_inverso = df_bruto.copy()
     nuevas_columnas = []
     for col in df_inverso.columns:
         if col.endswith('_Local'):      nuevas_columnas.append(col.replace('_Local',     '_Visitante'))
@@ -448,16 +460,48 @@ def pipeline_prediccion(df_bruto, sede_neutral=True, T=None):
     goles_L_inv, goles_V_inv, probs_inv = obtener_predicciones_crudas(df_inverso)
 
     resultados = contexto.copy()
-    resultados['xG_Modelo_Local']     = ((goles_L_norm + goles_V_inv) / 2).round(2)
-    resultados['xG_Modelo_Visitante'] = ((goles_V_norm + goles_L_inv) / 2).round(2)
-    resultados['Prob_Local']          = (probs_norm[:, 0] + probs_inv[:, 2]) / 2
-    resultados['Prob_Empate']         = (probs_norm[:, 1] + probs_inv[:, 1]) / 2
-    resultados['Prob_Visitante']      = (probs_norm[:, 2] + probs_inv[:, 0]) / 2
+    resultados['Modo_Cancha'] = venue_mode
 
-    probs_afiladas = resultados[['Prob_Local', 'Prob_Empate', 'Prob_Visitante']] ** (1 / T)
-    s = probs_afiladas.sum(axis=1).replace(0, 1e-12)
-    resultados[['Prob_Local', 'Prob_Empate', 'Prob_Visitante']] = probs_afiladas.div(s, axis=0)
-    return resultados
+    if venue_mode == 'listed':
+        resultados['xG_Modelo_Local']     = goles_L_norm
+        resultados['xG_Modelo_Visitante'] = goles_V_norm
+        resultados['Prob_Local']          = probs_norm[:, 0]
+        resultados['Prob_Empate']         = probs_norm[:, 1]
+        resultados['Prob_Visitante']      = probs_norm[:, 2]
+    else:
+        xg_l_neutral = (goles_L_norm + goles_V_inv) / 2
+        xg_v_neutral = (goles_V_norm + goles_L_inv) / 2
+        p1_neutral   = (probs_norm[:, 0] + probs_inv[:, 2]) / 2
+        px_neutral   = (probs_norm[:, 1] + probs_inv[:, 1]) / 2
+        p2_neutral   = (probs_norm[:, 2] + probs_inv[:, 0]) / 2
+
+        resultados['xG_Modelo_Local']     = xg_l_neutral
+        resultados['xG_Modelo_Visitante'] = xg_v_neutral
+        resultados['Prob_Local']          = p1_neutral
+        resultados['Prob_Empate']         = px_neutral
+        resultados['Prob_Visitante']      = p2_neutral
+
+        if venue_mode == 'host-aware':
+            local_host = resultados['Equipo_Local'].isin(ANFITRIONES_2026)
+            visit_host = resultados['Equipo_Visitante'].isin(ANFITRIONES_2026)
+            solo_local_host = local_host & ~visit_host
+            solo_visit_host = visit_host & ~local_host
+
+            resultados.loc[solo_local_host, 'xG_Modelo_Local'] = goles_L_norm[solo_local_host]
+            resultados.loc[solo_local_host, 'xG_Modelo_Visitante'] = goles_V_norm[solo_local_host]
+            resultados.loc[solo_local_host, 'Prob_Local'] = probs_norm[solo_local_host, 0]
+            resultados.loc[solo_local_host, 'Prob_Empate'] = probs_norm[solo_local_host, 1]
+            resultados.loc[solo_local_host, 'Prob_Visitante'] = probs_norm[solo_local_host, 2]
+
+            resultados.loc[solo_visit_host, 'xG_Modelo_Local'] = goles_V_inv[solo_visit_host]
+            resultados.loc[solo_visit_host, 'xG_Modelo_Visitante'] = goles_L_inv[solo_visit_host]
+            resultados.loc[solo_visit_host, 'Prob_Local'] = probs_inv[solo_visit_host, 2]
+            resultados.loc[solo_visit_host, 'Prob_Empate'] = probs_inv[solo_visit_host, 1]
+            resultados.loc[solo_visit_host, 'Prob_Visitante'] = probs_inv[solo_visit_host, 0]
+
+    resultados['xG_Modelo_Local'] = resultados['xG_Modelo_Local'].round(2)
+    resultados['xG_Modelo_Visitante'] = resultados['xG_Modelo_Visitante'].round(2)
+    return aplicar_temperatura(resultados)
 
 
 # ====================================================================
@@ -563,11 +607,44 @@ def aplicar_resultados_reales(df_pred, ruta=None):
     return df
 
 
+def comparar_modos_cancha(df_mundial_grupos, T_grupos):
+    base = pipeline_prediccion(df_mundial_grupos, T=T_grupos, venue_mode='neutral')
+    listado = pipeline_prediccion(df_mundial_grupos, T=T_grupos, venue_mode='listed')
+    anfitrion = pipeline_prediccion(df_mundial_grupos, T=T_grupos, venue_mode='host-aware')
+
+    cols = ['Fecha', 'Equipo_Local', 'Equipo_Visitante']
+    comp = base[cols].copy()
+    comp['Prob_Local_Neutral'] = (base['Prob_Local'] * 100).round(1)
+    comp['Prob_Empate_Neutral'] = (base['Prob_Empate'] * 100).round(1)
+    comp['Prob_Visitante_Neutral'] = (base['Prob_Visitante'] * 100).round(1)
+    comp['Prob_Local_HostAware'] = (anfitrion['Prob_Local'] * 100).round(1)
+    comp['Prob_Empate_HostAware'] = (anfitrion['Prob_Empate'] * 100).round(1)
+    comp['Prob_Visitante_HostAware'] = (anfitrion['Prob_Visitante'] * 100).round(1)
+    comp['Prob_Local_Listed'] = (listado['Prob_Local'] * 100).round(1)
+    comp['Prob_Empate_Listed'] = (listado['Prob_Empate'] * 100).round(1)
+    comp['Prob_Visitante_Listed'] = (listado['Prob_Visitante'] * 100).round(1)
+    comp['Delta_Local_pp'] = (
+        comp['Prob_Local_HostAware'] - comp['Prob_Local_Neutral']
+    ).round(1)
+    comp['Delta_Visitante_pp'] = (
+        comp['Prob_Visitante_HostAware'] - comp['Prob_Visitante_Neutral']
+    ).round(1)
+    comp['Sesgo_Local_Listed_vs_Neutral_pp'] = (
+        comp['Prob_Local_Listed'] - comp['Prob_Local_Neutral']
+    ).round(1)
+    comp['Anfitrion_Involucrado'] = (
+        comp['Equipo_Local'].isin(ANFITRIONES_2026)
+        | comp['Equipo_Visitante'].isin(ANFITRIONES_2026)
+    )
+    comp.to_csv('Predicciones/comparacion_modos_cancha.csv', index=False, encoding='utf-8-sig')
+    return comp
+
+
 # ====================================================================
 # 4. MATRIZ DE CRUCES 48x48
 # ====================================================================
 
-def matriz_cruces(equipos, df_vars, T_cruces):
+def matriz_cruces(equipos, df_vars, T_cruces, venue_mode='neutral'):
     # CORRECCIÓN VITAL: Quitamos 'Fecha' de df_vars antes del merge para evitar colisiones 
     # de columnas (Fecha_x y Fecha_y) que romperían el pipeline_prediccion.
     df_vars_clean = df_vars.drop(columns=['Fecha'], errors='ignore')
@@ -582,7 +659,7 @@ def matriz_cruces(equipos, df_vars, T_cruces):
     partido_vars = partido_vars.merge(df_vars_clean, left_on='Equipo_Visitante', right_on='Equipo', how='left',
                                       suffixes=('_Local', '_Visitante')).drop(columns=['Equipo'])
     
-    df_pred = pipeline_prediccion(partido_vars, sede_neutral=True, T=T_cruces)
+    df_pred = pipeline_prediccion(partido_vars, T=T_cruces, venue_mode=venue_mode)
 
     idx = {e: i for i, e in enumerate(equipos)}
     n   = len(equipos)
@@ -898,6 +975,10 @@ def parsear_argumentos():
     parser.add_argument('--force-retrain', action='store_true')
     parser.add_argument('--results', default=RUTA_RESULTADOS_REALES,
                         help='CSV opcional con resultados reales de fase de grupos.')
+    parser.add_argument(
+        '--venue-mode', choices=['neutral', 'host-aware', 'listed'], default='host-aware',
+        help='Tratamiento de cancha: neutral, host-aware o listed.',
+    )
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -912,7 +993,8 @@ if __name__ == '__main__':
 
     print(
         f"Perfil={args.profile} | CPU={CPU_THREADS} | CV={CV_SPLITS} | "
-        f"iter reg={N_ITER_REG} | iter 1X2={N_ITER_1X2} | sims={N_SIMULACIONES}"
+        f"iter reg={N_ITER_REG} | iter 1X2={N_ITER_1X2} | sims={N_SIMULACIONES} | "
+        f"cancha={args.venue_mode}"
     )
 
     pkls         = ['modelo_goles_L.pkl', 'modelo_goles_V.pkl',
@@ -935,7 +1017,10 @@ if __name__ == '__main__':
 
     print(f"\nFase de grupos (T={T_GRUPOS})...")
     df_mundial_grupos, df_vars, grupos, fechas_reales = cargar_mundial()
-    df_predicciones_mundial = pipeline_prediccion(df_mundial_grupos, sede_neutral=True, T=T_GRUPOS)
+    comparar_modos_cancha(df_mundial_grupos, T_GRUPOS)
+    df_predicciones_mundial = pipeline_prediccion(
+        df_mundial_grupos, T=T_GRUPOS, venue_mode=args.venue_mode,
+    )
     df_predicciones_mundial['Grupo'] = df_mundial_grupos['Grupo'].values
     df_predicciones_mundial = aplicar_resultados_reales(
         df_predicciones_mundial, args.results,
@@ -943,7 +1028,7 @@ if __name__ == '__main__':
 
     equipos = sorted(grupos['Equipo'].unique())
     print(f"Matriz de cruces 48×48 (T={T_CRUCES})...")
-    mc = matriz_cruces(equipos, df_vars, T_CRUCES)
+    mc = matriz_cruces(equipos, df_vars, T_CRUCES, venue_mode=args.venue_mode)
 
     print("Predicción puntual de los 104 partidos...")
     df_grupos_pred, clasif, terceros, pos, df_elim, campeon = prediccion_puntual(

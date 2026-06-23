@@ -56,7 +56,7 @@ def construir_datos():
     df_mundial_grupos, df_vars, grupos, fechas_reales = pm.cargar_mundial()
 
     # Probabilidades calibradas CON TEMPERATURA para ver como se estan asumiendo las simulaciones
-    pred = pm.pipeline_prediccion(df_mundial_grupos, sede_neutral=True, T=None)
+    pred = pm.pipeline_prediccion(df_mundial_grupos, T=None, venue_mode='host-aware')
     pred['Grupo'] = df_mundial_grupos['Grupo'].values
     pred = pm.aplicar_resultados_reales(pred)
 
