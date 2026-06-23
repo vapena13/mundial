@@ -8,7 +8,7 @@ completo original sigue disponible con `--profile full`.
 
 ```bash
 pip install -r requirements-colab.txt
-python 04_Prediccion/prediccion_mundial.py --profile colab
+python 04_Prediccion/prediccion_mundial.py --profile colab --venue-mode host-aware
 python 04_Prediccion/generar_informe.py
 python 05_Web/generar_web.py
 ```
@@ -52,3 +52,20 @@ evita entrenar de nuevo cuando Colab elimina la sesion.
 El paquete preparado incluye modelos entrenados con el perfil `colab`. Para
 entrenarlos de nuevo desde cero use `--force-retrain`; sin esa opcion, actualizar
 `resultados_reales.csv` solo recalcula tablas, cruces y simulaciones.
+
+## Publicar la pagina web
+
+El archivo visible es `docs/index.html`. Para verlo desde otro dispositivo:
+
+1. Suba los cambios al repo `vapena13/mundial`.
+2. En GitHub abra **Settings -> Pages**.
+3. En **Build and deployment**, elija **Deploy from a branch**.
+4. Seleccione branch `main` y carpeta `/docs`.
+5. Guarde. Despues de unos minutos la pagina queda en:
+
+```text
+https://vapena13.github.io/mundial/
+```
+
+Cada vez que cambie `Data/resultados_reales.csv`, vuelva a correr los tres
+comandos de ejecucion y suba los cambios de `Data/`, `Predicciones/` y `docs/`.

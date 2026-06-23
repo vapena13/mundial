@@ -51,10 +51,11 @@ campeon = elim[elim['Fase'] == 'Final']['Avanza'].iloc[0]
 final = elim[elim['Fase'] == 'Final'].iloc[0]
 subcampeon = final['Local'] if final['Avanza'] == final['Visitante'] else final['Visitante']
 tercero = elim[elim['Fase'] == '3er Puesto']['Avanza'].iloc[0]
+modo_cancha = 'host-aware: cancha neutral salvo ventaja de anfitrión para EE. UU., México y Canadá'
 
 L.append("# 🏆 Predicción completa del Mundial 2026 — los 104 partidos\n")
 L.append("Generado con el modelo de este repositorio: regresores XGBoost (Tweedie) de goles + "
-         f"clasificador 1X2 XGBoost calibrado ({calibracion}), predicción a sede neutral con \"efecto espejo\", "
+         f"clasificador 1X2 XGBoost calibrado ({calibracion}), modo de cancha `{modo_cancha}`, "
          f"temperatura `T={temperatura}` y simulación de **Monte Carlo de "
          f"{n_simulaciones:,} mundiales** para las probabilidades por selección.\n")
 L.append(f"> Predicción generada el {date.today().isoformat()}, con histórico hasta {fecha_max_datos} "

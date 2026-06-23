@@ -1,6 +1,6 @@
 # 🏆 Predicción completa del Mundial 2026 — los 104 partidos
 
-Generado con el modelo de este repositorio: regresores XGBoost (Tweedie) de goles + clasificador 1X2 XGBoost calibrado (sigmoid), predicción a sede neutral con "efecto espejo", temperatura `T=0.84` y simulación de **Monte Carlo de 5,000 mundiales** para las probabilidades por selección.
+Generado con el modelo de este repositorio: regresores XGBoost (Tweedie) de goles + clasificador 1X2 XGBoost calibrado (sigmoid), modo de cancha `host-aware: cancha neutral salvo ventaja de anfitrión para EE. UU., México y Canadá`, temperatura `T=0.84` y simulación de **Monte Carlo de 5,000 mundiales** para las probabilidades por selección.
 
 > Predicción generada el 2026-06-23, con histórico hasta 2026-05-29 y 44 resultado(s) real(es) fijado(s). La asignación de mejores terceros al cuadro usa la simplificación del notebook (ranking 1º-8º a huecos fijos), no la tabla oficial de la FIFA.
 

@@ -1,6 +1,8 @@
 # Simulaciones Mundial 2026 ⚽🏆
 
-¿Quién va a ganar el Mundial 2026? Este repositorio responde con datos: scrapea todo el histórico de estadísticas de las selecciones, entrena dos modelos XGBoost y simula **10.000 mundiales** con Monte Carlo para estimar el rendimiento esperado de cada selección — hasta predecir los 104 partidos del torneo. Iré actualizando y explicando todo más en detalle en `@jyts__`.
+¿Quién va a ganar el Mundial 2026? Este repositorio responde con datos: scrapea histórico de estadísticas de selecciones, entrena modelos XGBoost y simula miles de mundiales con Monte Carlo para estimar el rendimiento esperado de cada selección, hasta predecir los 104 partidos del torneo.
+
+Esta versión está adaptada para correr en **Google Colab gratuito (CPU)**, permite fijar resultados reales conforme se juegan los partidos y usa un tratamiento de cancha `host-aware`: sede neutral para casi todos los partidos, con ventaja de anfitrión solo cuando juegan **EE. UU., México o Canadá**.
 
 ---
 
@@ -21,18 +23,23 @@ Con los datos listos, en `Modelling.ipynb` se entrenan dos modelos:
 1. **Modelo de goles**: dos regresores XGBoost con objetivo Tweedie (a medio camino entre Poisson y Gamma, ideal para fútbol) que predicen los goles esperados de cada equipo.
 2. **Modelo de resultado**: un clasificador XGBoost 1X2 que usa como meta-variables las predicciones de goles del primero, con **probabilidades calibradas** (calibración isotónica) y validación temporal para no mezclar pasado y futuro.
 
-### 5️⃣ El comportamiento estocástico: Monte Carlo con 10.000 mundiales
-¿Por qué no basta con simular un mundial? Porque la realidad es **estocástica**. Si solo simulásemos uno, una selección con el 51% de probabilidades de pasar, pasaría exactamente igual que una con el 99%. Para capturar el efecto de la varianza, simulamos **10.000 mundiales diferentes**: el equipo del 51% se clasifica en ~5.100 de ellos y el del 99% en ~9.900. Así vemos el efecto de las probabilidades en todos los cruces que tendríamos hasta la final — fase de grupos partido a partido, mejores terceros, dieciseisavos, octavos, cuartos, semifinales y final.
+### 5️⃣ El comportamiento estocástico: Monte Carlo
+¿Por qué no basta con simular un mundial? Porque la realidad es **estocástica**. Si solo simulásemos uno, una selección con el 51% de probabilidades de pasar, pasaría exactamente igual que una con el 99%. Para capturar el efecto de la varianza, simulamos miles de mundiales diferentes. En el perfil `colab` se usan **5.000 simulaciones**; el modo completo puede subir ese número.
 
 ### 🌐 Web de predicciones diarias — [`05_Web/`](05_Web/) → [`docs/`](docs/)
 Una página estática (lista para **GitHub Pages**) con las predicciones de cada día: probabilidades de victoria calibradas, córners esperados (líneas 7.5/8.5/9.5), tarjetas esperadas (líneas 3.5/4.5), marcador más probable, tabla de campeón por Monte Carlo y el cuadro completo de eliminatorias. La sección «Partidos de hoy» se calcula con la fecha local del visitante, así que **se actualiza sola cada día** sin regenerar nada; además, un workflow de GitHub Actions ([`.github/workflows/actualizar_web.yml`](.github/workflows/actualizar_web.yml)) la regenera a diario por si cambian los datos.
 
-Para activarla: en GitHub ve a **Settings → Pages → Source: Deploy from a branch → `main` / `docs/`**. La web quedará en `https://<usuario>.github.io/Simulaciones_Mundial/`.
+Para activarla en este repo: en GitHub ve a **Settings → Pages → Build and deployment → Source: Deploy from a branch → Branch: `main` → Folder: `/docs` → Save**. La web quedará en:
+
+`https://vapena13.github.io/mundial/`
 
 ### 6️⃣ Predicción de los 104 partidos — [`04_Prediccion/`](04_Prediccion/) → [`Predicciones/`](Predicciones/)
 `prediccion_mundial.py` es el pipeline completo en un script: entrena los modelos (si no existen los `.pkl`), predice los 72 partidos de la fase de grupos, construye el cuadro completo de eliminatorias con el resultado más probable de cada cruce (incluido el 3er puesto) y corre el Monte Carlo. `generar_informe.py` lo convierte en un informe legible.
 
 **Resultados** en [`Predicciones/PREDICCIONES.md`](Predicciones/PREDICCIONES.md): marcador más probable y probabilidades 1X2 de los 104 partidos, clasificaciones de los 12 grupos, cuadro hasta la final y probabilidades de campeón por selección (los mismos datos en CSV en la misma carpeta).
+
+### 7️⃣ Actualización con resultados reales
+Los marcadores ya jugados se guardan en [`Data/resultados_reales.csv`](Data/resultados_reales.csv). Cada fila fija un partido en fase de grupos y el modelo recalcula tablas, cruces y Monte Carlo con ese resultado como hecho real. Las predicciones no se reentrenan con esa muestra pequeña; solo se actualiza la simulación del torneo.
 
 ---
 
@@ -67,13 +74,23 @@ python 01_Scraping/Scrapper.py
 
 # Limpieza y modelado explicados paso a paso: notebooks 02 y 03
 
-# Predicción completa del Mundial (entrena + simula 10.000 mundiales)
-python 04_Prediccion/prediccion_mundial.py
+# Predicción completa del Mundial en CPU/Colab
+python 04_Prediccion/prediccion_mundial.py --profile colab --venue-mode host-aware
 python 04_Prediccion/generar_informe.py
 
 # Web de predicciones diarias (docs/index.html)
 python 05_Web/generar_web.py
 ```
+
+Para comparar supuestos de cancha:
+
+```bash
+python 04_Prediccion/prediccion_mundial.py --profile colab --venue-mode neutral
+python 04_Prediccion/prediccion_mundial.py --profile colab --venue-mode host-aware
+python 04_Prediccion/prediccion_mundial.py --profile colab --venue-mode listed
+```
+
+El CSV [`Predicciones/comparacion_modos_cancha.csv`](Predicciones/comparacion_modos_cancha.csv) muestra cómo cambian las probabilidades entre esos modos.
 
 ## 💡 Inspírate
 
