@@ -37,6 +37,9 @@ CPU_THREADS = max(1, os.cpu_count() or 1)
 CALIBRATION_METHOD = 'isotonic'
 RUTA_RESULTADOS_REALES = './Data/resultados_reales.csv'
 ANFITRIONES_2026 = {'EE. UU.', 'México', 'Canadá'}
+FACTOR_GOL_DINAMICO = 1.0
+FACTOR_GOL_MIN = 0.85
+FACTOR_GOL_MAX = 1.35
 
 
 def configurar_perfil(nombre):
@@ -499,8 +502,8 @@ def pipeline_prediccion(df_bruto, sede_neutral=True, T=None, venue_mode=None):
             resultados.loc[solo_visit_host, 'Prob_Empate'] = probs_inv[solo_visit_host, 1]
             resultados.loc[solo_visit_host, 'Prob_Visitante'] = probs_inv[solo_visit_host, 0]
 
-    resultados['xG_Modelo_Local'] = resultados['xG_Modelo_Local'].round(2)
-    resultados['xG_Modelo_Visitante'] = resultados['xG_Modelo_Visitante'].round(2)
+    resultados['xG_Modelo_Local'] = (resultados['xG_Modelo_Local'] * FACTOR_GOL_DINAMICO).round(2)
+    resultados['xG_Modelo_Visitante'] = (resultados['xG_Modelo_Visitante'] * FACTOR_GOL_DINAMICO).round(2)
     return aplicar_temperatura(resultados)
 
 
@@ -541,6 +544,7 @@ def cargar_mundial():
 
 def aplicar_resultados_reales(df_pred, ruta=None):
     """Fija partidos ya jugados para la tabla y el Monte Carlo."""
+    global FACTOR_GOL_DINAMICO
     ruta = ruta or RUTA_RESULTADOS_REALES
     df = df_pred.copy()
     df['Jugado'] = False
@@ -599,13 +603,31 @@ def aplicar_resultados_reales(df_pred, ruta=None):
 
     gl = df['Goles_Reales_Local']
     gv = df['Goles_Reales_Visitante']
+    xg_previo_total = (
+        df.loc[jugado, 'xG_Modelo_Local_Previa']
+        + df.loc[jugado, 'xG_Modelo_Visitante_Previa']
+    ).sum()
+    goles_reales_total = (gl[jugado] + gv[jugado]).sum()
+    if xg_previo_total > 0 and goles_reales_total > 0:
+        FACTOR_GOL_DINAMICO = float(np.clip(
+            goles_reales_total / xg_previo_total,
+            FACTOR_GOL_MIN,
+            FACTOR_GOL_MAX,
+        ))
+        pendientes = ~jugado
+        df.loc[pendientes, 'xG_Modelo_Local'] *= FACTOR_GOL_DINAMICO
+        df.loc[pendientes, 'xG_Modelo_Visitante'] *= FACTOR_GOL_DINAMICO
+
     df.loc[jugado, 'Prob_Local'] = (gl[jugado] > gv[jugado]).astype(float)
     df.loc[jugado, 'Prob_Empate'] = (gl[jugado] == gv[jugado]).astype(float)
     df.loc[jugado, 'Prob_Visitante'] = (gl[jugado] < gv[jugado]).astype(float)
     df.loc[jugado, 'xG_Modelo_Local'] = gl[jugado]
     df.loc[jugado, 'xG_Modelo_Visitante'] = gv[jugado]
 
-    print(f'Resultados reales aplicados: {int(jugado.sum())} partido(s).')
+    print(
+        f'Resultados reales aplicados: {int(jugado.sum())} partido(s). '
+        f'Factor goles={FACTOR_GOL_DINAMICO:.2f}.'
+    )
     return df
 
 

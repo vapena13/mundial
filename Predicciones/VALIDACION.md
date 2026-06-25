@@ -6,27 +6,27 @@ Compara la prediccion previa del modelo contra los partidos ya jugados. Los part
 
 | Metrica | Valor |
 |---|---:|
-| Partidos evaluados | 44 |
-| Acierto 1X2 | 52.3% |
-| Marcador exacto | 11.4% |
+| Partidos evaluados | 52 |
+| Acierto 1X2 | 53.8% |
+| Marcador exacto | 11.5% |
 | Error medio de goles totales | 2.00 |
-| Brier score 1X2 medio | 0.570 |
-| Probabilidad media asignada al resultado real | 42.7% |
+| Brier score 1X2 medio | 0.568 |
+| Probabilidad media asignada al resultado real | 42.9% |
 
 ## Mayores sorpresas
 
 | Fecha | Partido | Prediccion previa | Real | Prob. real previa |
 |---|---|---:|---:|---:|
 | 2026-06-20 | Turquía - Paraguay | 1-0 (1) | 0-1 (2) | 13.1% |
+| 2026-06-23 | Inglaterra - Ghana | 2-0 (1) | 0-0 (X) | 18.4% |
 | 2026-06-23 | Noruega - Senegal | 0-2 (2) | 3-2 (1) | 18.8% |
+| 2026-06-25 | Sudáfrica - Corea del Sur | 1-1 (X) | 1-0 (1) | 21.3% |
 | 2026-06-16 | Arabia Saudí - Uruguay | 0-2 (2) | 1-1 (X) | 21.5% |
 | 2026-06-14 | Australia - Turquía | 1-2 (2) | 2-0 (1) | 21.9% |
 | 2026-06-22 | Uruguay - Cabo Verde | 1-0 (1) | 2-2 (X) | 24.1% |
 | 2026-06-11 | México - Sudáfrica | 1-1 (X) | 2-0 (1) | 24.1% |
 | 2026-06-15 | España - Cabo Verde | 2-0 (1) | 0-0 (X) | 24.9% |
 | 2026-06-16 | Irán - Nueva Zelanda | 2-0 (1) | 2-2 (X) | 25.6% |
-| 2026-06-15 | Bélgica - Egipto | 2-0 (1) | 1-1 (X) | 26.5% |
-| 2026-06-17 | Portugal - RD Congo | 2-0 (1) | 1-1 (X) | 26.7% |
 
 ## Detalle
 
@@ -76,3 +76,11 @@ Compara la prediccion previa del modelo contra los partidos ya jugados. Los part
 | 2026-06-22 | J | Argentina - Austria | 2-1 | 2-0 | si | 45.7% | 0.451 |
 | 2026-06-23 | I | Noruega - Senegal | 0-2 | 3-2 | no | 18.8% | 1.012 |
 | 2026-06-23 | J | Jordania - Argelia | 0-2 | 1-2 | si | 69.6% | 0.143 |
+| 2026-06-23 | L | Inglaterra - Ghana | 2-0 | 0-0 | no | 18.4% | 1.215 |
+| 2026-06-24 | B | Bosnia-Herzegovina - Catar | 1-2 | 3-1 | no | 28.9% | 0.759 |
+| 2026-06-24 | B | Suiza - Canadá | 1-0 | 2-1 | si | 37.8% | 0.581 |
+| 2026-06-24 | K | Colombia - RD Congo | 1-0 | 1-0 | si | 49.7% | 0.386 |
+| 2026-06-25 | A | Sudáfrica - Corea del Sur | 1-1 | 1-0 | no | 21.3% | 0.943 |
+| 2026-06-25 | A | República Checa - México | 1-2 | 0-3 | si | 65.1% | 0.193 |
+| 2026-06-25 | C | Marruecos - Haití | 2-0 | 4-2 | si | 66.1% | 0.178 |
+| 2026-06-25 | C | Escocia - Brasil | 1-2 | 0-3 | si | 64.6% | 0.198 |

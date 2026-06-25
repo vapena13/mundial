@@ -32,6 +32,10 @@ Cada corrida tambien genera:
   Brier score y mayores sorpresas.
 - `Predicciones/validacion_predicciones.csv`: detalle partido por partido.
 
+Si la consola muestra algo como `Factor goles=1.15`, significa que los goles
+reales vienen 15% por encima del xG previo del modelo. Ese factor se aplica a
+partidos pendientes y cruces para evitar marcadores demasiado conservadores.
+
 Para una comprobacion rapida del pipeline:
 
 ```bash

@@ -41,6 +41,8 @@ Para activarla en este repo: en GitHub ve a **Settings → Pages → Build and d
 ### 7️⃣ Actualización con resultados reales
 Los marcadores ya jugados se guardan en [`Data/resultados_reales.csv`](Data/resultados_reales.csv). Cada fila fija un partido en fase de grupos y el modelo recalcula tablas, cruces y Monte Carlo con ese resultado como hecho real. Las predicciones no se reentrenan con esa muestra pequeña; solo se actualiza la simulación del torneo.
 
+Para no subestimar goles cuando el torneo real viene más abierto que el histórico, el pipeline calcula un `factor de goles` con los partidos ya jugados: compara goles reales contra xG previo del modelo y escala los xG de partidos pendientes y cruces. El ajuste queda acotado entre `0.85` y `1.35` para evitar sobrecorregir por pocos partidos.
+
 Además, el pipeline compara la predicción previa contra el marcador real y genera:
 
 - [`Predicciones/VALIDACION.md`](Predicciones/VALIDACION.md): resumen legible de aciertos, errores y sorpresas.
