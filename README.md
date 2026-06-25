@@ -43,6 +43,28 @@ Los marcadores ya jugados se guardan en [`Data/resultados_reales.csv`](Data/resu
 
 Para no subestimar goles cuando el torneo real viene más abierto que el histórico, el pipeline calcula un `factor de goles` con los partidos ya jugados: compara goles reales contra xG previo del modelo y escala los xG de partidos pendientes y cruces. El ajuste queda acotado entre `0.85` y `1.35` para evitar sobrecorregir por pocos partidos.
 
+Si además quieres que el modelo use las estadísticas reales recientes del mes
+(xG, remates, córners, tarjetas, etc.), hay un flujo incremental:
+
+```bash
+pip install -r requirements-scraping.txt
+
+# 1. Guardar URLs nuevas de Flashscore en un TXT, una por línea.
+# 2. Abrir Chrome con depuración remota en el puerto 9222.
+python 01_Scraping/scrapear_incremental.py --urls Data/urls_incremental_junio.txt
+
+# 3. Regenerar features usando partidos jugados hasta la fecha elegida.
+python 02_Limpieza_Datos/Data_Cleaning.py --features-hasta 2026-06-25
+
+# 4. Reentrenar y regenerar predicciones.
+python 04_Prediccion/prediccion_mundial.py --profile colab --venue-mode host-aware --force-retrain
+python 04_Prediccion/generar_informe.py
+python 05_Web/generar_web.py
+```
+
+Ese modo actualiza `datos_mundial.csv` con la forma más reciente por selección sin
+romper el calendario de `partidos_mundial.csv`.
+
 Además, el pipeline compara la predicción previa contra el marcador real y genera:
 
 - [`Predicciones/VALIDACION.md`](Predicciones/VALIDACION.md): resumen legible de aciertos, errores y sorpresas.

@@ -1,0 +1,3 @@
+# Pegue aqui URLs nuevas de Flashscore, una por linea.
+# Ejemplo:
+# https://www.flashscore.es/partido/futbol/equipo-a/equipo-b/resumen/estadisticas/general/?mid=...

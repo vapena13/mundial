@@ -1,5 +1,6 @@
 import re
 import os
+import argparse
 import numpy as np
 import pandas as pd
 from scipy.stats import linregress
@@ -10,6 +11,18 @@ from sklearn.ensemble import RandomForestRegressor
 # ============================================================
 # CONFIGURACIÓN
 # ============================================================
+
+parser = argparse.ArgumentParser(description='Limpieza y feature engineering del Mundial 2026')
+parser.add_argument(
+    '--fecha-corte', default='2026-06-11',
+    help='Fecha que separa entrenamiento histórico y calendario del Mundial.',
+)
+parser.add_argument(
+    '--features-hasta', default=None,
+    help='Fecha máxima de partidos reales recientes para refrescar datos_mundial.csv.',
+)
+args = parser.parse_args()
+
 RUTA_RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(RUTA_RAIZ)
 
@@ -20,7 +33,8 @@ RUTA_OUT_HISTORICO = './Data/datos_historicos.csv'
 RUTA_OUT_MUNDIAL   = './Data/datos_mundial.csv'
 RUTA_OUT_PARTIDOS  = './Data/partidos_mundial.csv'
 
-FECHA_CORTE   = pd.to_datetime('2026-06-11')
+FECHA_CORTE   = pd.to_datetime(args.fecha_corte)
+FECHA_FEATURES_HASTA = pd.to_datetime(args.features_hasta) if args.features_hasta else None
 FECHA_MINIMA  = pd.to_datetime('2021-01-01')   
 
 VENTANAS = [3, 5]   
@@ -222,6 +236,23 @@ if indices_debuts:
     df_mundial_first = df_mundial_sorted.iloc[indices_debuts].copy().reset_index(drop=True)
     df_mundial_first = df_mundial_first.dropna(axis=1, how='all')
     df = pd.concat([df, df_mundial_first], ignore_index=True)
+
+if FECHA_FEATURES_HASTA is not None:
+    df_mundial_forma = df_mundial_raw[
+        (df_mundial_raw['Fecha'] <= FECHA_FEATURES_HASTA)
+        & df_mundial_raw['Resultado'].notna()
+        & (df_mundial_raw['Resultado'].astype(str).str.strip() != '')
+    ].copy()
+    if not df_mundial_forma.empty:
+        df = pd.concat([df, df_mundial_forma], ignore_index=True)
+        df.drop_duplicates(
+            subset=['URL', 'Fecha', 'Equipo_Local', 'Equipo_Visitante'],
+            keep='last', inplace=True,
+        )
+        print(
+            f"Partidos recientes usados para forma hasta "
+            f"{FECHA_FEATURES_HASTA.date()}: {len(df_mundial_forma)}"
+        )
 
 
 # ============================================================
@@ -522,7 +553,15 @@ long_df = long_df.merge(
     on='Equipo', how='left',
 )
 
-df_mundial_export = long_df[long_df['Fecha'] >= FECHA_CORTE].copy()
+if FECHA_FEATURES_HASTA is not None:
+    df_mundial_export = (
+        long_df[long_df['Fecha'] <= FECHA_FEATURES_HASTA]
+        .sort_values('Fecha')
+        .drop_duplicates('Equipo', keep='last')
+        .copy()
+    )
+else:
+    df_mundial_export = long_df[long_df['Fecha'] >= FECHA_CORTE].copy()
 df_historico_export = df_reduced[df_reduced['Fecha'] < FECHA_CORTE].copy()
 
 df_historico_export.to_csv(RUTA_OUT_HISTORICO, index=False, encoding='utf-8-sig')

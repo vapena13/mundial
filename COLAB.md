@@ -36,6 +36,23 @@ Si la consola muestra algo como `Factor goles=1.15`, significa que los goles
 reales vienen 15% por encima del xG previo del modelo. Ese factor se aplica a
 partidos pendientes y cruces para evitar marcadores demasiado conservadores.
 
+## Estadisticas recientes de junio
+
+El ajuste anterior corrige goles esperados, pero no actualiza xG, remates,
+corners o tarjetas. Para eso hay que scrapear las estadisticas reales recientes:
+
+```bash
+pip install -r requirements-scraping.txt
+python 01_Scraping/scrapear_incremental.py --urls Data/urls_incremental_junio.txt
+python 02_Limpieza_Datos/Data_Cleaning.py --features-hasta 2026-06-25
+python 04_Prediccion/prediccion_mundial.py --profile colab --venue-mode host-aware --force-retrain
+python 04_Prediccion/generar_informe.py
+python 05_Web/generar_web.py
+```
+
+`Data/urls_incremental_junio.txt` debe contener una URL de Flashscore por linea.
+El scraper incremental agrega esas filas a `Data/partidos.csv` y evita duplicados.
+
 Para una comprobacion rapida del pipeline:
 
 ```bash
